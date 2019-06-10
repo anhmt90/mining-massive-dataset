@@ -107,6 +107,7 @@ class HMM_Params:
         self.A  = self.rnd_stochastic_mat(n_states,n_states)
         self.B  = self.rnd_stochastic_mat(n_states,n_symbols)
         self.pi = self.rnd_stochastic_mat(1,n_states).transpose()
+
     def rnd_stochastic_mat(self,I,J):
         """ Retruns a randomly initialized stochastic matrix with shape (I,J).
         
