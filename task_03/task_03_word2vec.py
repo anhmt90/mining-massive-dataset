@@ -662,7 +662,7 @@ y_train[[1,3,4,5]]
 
 #Omran: I think this section is done, if you face any problem let me know
 class LSTM:
-    def __init__(self, MAX_SENTENCE_LENGTH,EMBEDDING_DIM, cell_dim=64):
+    def __init__(self, cell_dim=64):
         """
         Attributes
         ----------
@@ -705,35 +705,30 @@ class LSTM:
         """
         ### YOUR CODE HERE ### 
         
-        self.lstm_cell = tf.nn.rnn_cell.LSTMCell(cell_dim)
-        init_state = self.lstm_cell.zero_state(64, tf.float32)#64 batch size
-        
+        cell = tf.nn.rnn_cell.LSTMCell(cell_dim)
+
         #I am not quite sure if we need outputs, which all the states outputs.
-        outputs, self.last_state = tf.nn.dynamic_rnn(self.lstm_cell, 
-            self.x, initial_state=init_state, sequence_length=self.s)
+        initial_state = cell.zero_state(BATCH_SIZE, tf.float32)
+        lstm_outputs, final_state = tf.nn.dynamic_rnn(cell, self.x, initial_state=initial_state)
         """
         Define logits, prob and y_hat as class attributes. 
         We get logits by applying a single dense layer on the last state.
         """
         ### YOUR CODE HERE ### 
-        #self.logits = tf.nn.layers.dense(
-            #inputs=self.last_state,
-            #units=1,
-            #activation=None)
-        weights = tf.Variable(tf.random_normal([cell_dim, 1]))
+        self.logits = tf.contrib.layers.fully_connected(lstm_outputs[:, -1], 1, activation_fn=tf.sigmoid)
 
-        output = tf.matmul(self.last_state[-1], weights) 
-        self.logits =  tf.squeeze(output)
-        ySqueezed = tf.squeeze(self.y)
-        r = tf.nn.sigmoid_cross_entropy_with_logits(labels=ySqueezed, logits=self.logits)
+        self.y = tf.squeeze(self.y)
+        r = tf.nn.sigmoid_cross_entropy_with_logits(labels=self.y, logits=self.logits)
         self.loss = tf.reduce_mean(r)
+
+        # self.loss = tf.losses.mean_squared_error(self.y, self.logits)
         self.optimize = tf.train.AdamOptimizer().minimize(self.loss)
-        
+
         self.y_hat = tf.round(r)
-        
-        #correct_pred = tf.equal(tf.argmax(self.y_hat, 1), tf.argmax(self.y))
-        correct_pred = tf.losses.absolute_difference(self.y, self.y_hat)
+        correct_pred = tf.losses.absolute_difference( self.y,self.y_hat)
         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
+
 
 
 # In this part we finally train our RNN model and evaluate on the test set.
@@ -745,7 +740,7 @@ tf.reset_default_graph()
 tf.set_random_seed(123)
 np.random.seed(123)
 
-model = LSTM(MAX_SENTENCE_LENGTH,EMBEDDING_DIM)
+model = LSTM()
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
