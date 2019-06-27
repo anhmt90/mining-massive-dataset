@@ -10,7 +10,6 @@ from collections import Counter
 from collections import defaultdict
 import tensorflow as tf
 from scipy import spatial
-# get_ipython().run_line_magic('matplotlib', 'inline')
 
 
 # # 1. Introduction
@@ -238,8 +237,7 @@ class Embedding():
         M = x.shape[0]
         one_hot = np.zeros((N, M))
         for i in range(M):
-            if(ind_to_word.get(i) != None):
-                one_hot[x[i], i] = 1
+            one_hot[x[i], i] = 1
         
 #         for xi,intWord in enumerate(x):
 #             one_hot[xi,intWord] = 1
@@ -479,47 +477,49 @@ def get_batch(data, size, prob):
 # In[15]:
 
 
-# np.random.seed(123)
-# model = Embedding(N=VOCABULARY_SIZE, D=EMBEDDING_DIM)
-#
-# losses = []
-#
-# MAX_ITERATIONS = 150000
-# PRINT_EVERY = 10000
-#
-# for i in range(MAX_ITERATIONS):
-#     x, y = get_batch(data, 128, probabilities)
-#     loss, _, _ = model.step(x, y, 1e-3)
-#     losses.append(loss)
-#
-#     if (i + 1) % PRINT_EVERY == 0:
-#         print('Iteration:', i + 1, 'Loss:', np.mean(losses[-PRINT_EVERY:]))
-
-
-# In[16]:
-
-
 import pickle
-
-# model_out = open("model.pickle","wb")
-# losses_out = open("losses.pickle","wb")
-
-# pickle.dump(losses, model_out)
-# pickle.dump(losses, losses_out)
-# model_out.close()
-# losses_out.close()
-
-
-# In[ ]:
-
 
 model = pickle.load(open("model.pickle","rb"))
 losses = pickle.load(open("losses.pickle","rb"))
 
 
-# The embedding matrix is given by $\mathbf{U}^T$, where the $i$th row is the vector for $i$th word in the vocabulary.
+# In[16]:
+
+
+# np.random.seed(123)
+# model = Embedding(N=VOCABULARY_SIZE, D=EMBEDDING_DIM)
+
+# losses = []
+
+# MAX_ITERATIONS = 150000
+# PRINT_EVERY = 10000
+
+# for i in range(MAX_ITERATIONS):
+#     x, y = get_batch(data, 128, probabilities)
+#     loss, _, _ = model.step(x, y, 1e-3)
+#     losses.append(loss)
+
+#     if (i + 1) % PRINT_EVERY == 0:
+#         print('Iteration:', i + 1, 'Loss:', np.mean(losses[-PRINT_EVERY:]))
+
 
 # In[17]:
+
+
+# import pickle
+
+# model_out = open("model.pickle","wb")
+# losses_out = open("losses.pickle","wb")
+
+# pickle.dump(model, model_out)
+# pickle.dump(losses, losses_out)
+# model_out.close()
+# losses_out.close()
+
+
+# The embedding matrix is given by $\mathbf{U}^T$, where the $i$th row is the vector for $i$th word in the vocabulary.
+
+# In[18]:
 
 
 emb_matrix = model.U.T
@@ -529,7 +529,7 @@ emb_matrix = model.U.T
 # 
 # As mentioned before, vectors can keep some language properties like analogies. Given a relation a:b and a query c, we can find d such that c:d follows the same relation. We hope to find d by using vector operations. In this case, finding the real word vector $\mathbf{u}_d$ closest to $\mathbf{u}_b - \mathbf{u}_a + \mathbf{u}_c$ gives us d.
 
-# In[18]:
+# In[19]:
 
 
 triplets = [['go', 'going', 'come'], ['look', 'looking', 'come'], ['you', 'their', 'we'], 
@@ -544,7 +544,7 @@ for triplet in triplets:
     candidates: list
         A list of 5 closest words, measured with cosine similarity, to the vector u_b - u_a + u_c
     """
-
+    
     ### YOUR CODE HERE ###
     x = np.array([word_to_ind[a], word_to_ind[b], word_to_ind[c]])
     inputs = model.one_hot(x, model.N)
@@ -558,27 +558,22 @@ for triplet in triplets:
         one_hot = model.one_hot(np.array([word_to_ind[word]]), model.N)
         u_i = emb_matrix.T @ one_hot
         cosine_distances.append((word_to_ind[word], spatial.distance.cosine(u_d, u_i)))
-
-    # for v_i in model.V:
-    #     cosine_distances.append((word_to_ind[word], spatial.distance.cosine(u_d, v_i)))
-
+    
     cosine_distances.sort(key=lambda tup: tup[1])
     candidates_indices = [i[0] for i in cosine_distances[:5]]
 
     candidates = []
     for i in candidates_indices:
         candidates.append(ind_to_word[i])
-
-    # result = 1 - spatial.distance.cosine(ux, ui[])
-
-    print('%s is to %s as %s is to [%s]' % (a, b, c, '|'.join(candidates)))
+    
+    print('%s is to %s as %s is to [%s]' % (a, b, c, '|'.join(candidates)))    
 
 
 # # RNN
-#
+# 
 # Our end goal is to use the pretrained word vectors on some downstream task, e.g. sentiment analysis. We first generate a dataset where we just concatenate 1 and 5-star reviews into `all_sentences`. We also create a list `Y` with labels 1 for positive reviews and 0 for negative
 
-# In[ ]:
+# In[20]:
 
 
 all_sentences = reviews_1star + reviews_5star
@@ -588,19 +583,19 @@ SENTENCES_SIZE = len(all_sentences)
 MAX_SENTENCE_LENGTH = max([len(x) for x in all_sentences])
 
 
-# Your task is to create an array $\mathbf{X}$ where (i,j,k) element denotes $k$th value of an embedding for $j$th word in $i$th sentence in the dataset. In addition, we need a list that keeps track of how many words are in each sentence.
+# Your task is to create an array $\mathbf{X}$ where (i,j,k) element denotes $k$th value of an embedding for $j$th word in $i$th sentence in the dataset. In addition, we need a list that keeps track of how many words are in each sentence. 
 
-# In[ ]:
+# In[21]:
 
 
 """
 Returns
 -------
 X: array
-    Array of dimensions (SENTENCES_SIZE, MAX_SENTENCE_LENGTH, EMBEDDING_DIM) where
-    the first dimension denotes the index of the sentence in the dataset and second is
+    Array of dimensions (SENTENCES_SIZE, MAX_SENTENCE_LENGTH, EMBEDDING_DIM) where 
+    the first dimension denotes the index of the sentence in the dataset and second is 
     the word index in the sentence. Sentences that are shorter than MAX_SENTENCE_LENGTH
-    are padded with zero vectors. Words that are not in the vocabulary are also
+    are padded with zero vectors. Words that are not in the vocabulary are also 
     represented with zero vectors of EMBEDDING_DIM size.
 S: array
     Array of SENTENCES_SIZE dimension containing the sentence lenghts
@@ -618,128 +613,154 @@ for i, sentence in enumerate(all_sentences):
     result = np.pad(result, ((0,MAX_SENTENCE_LENGTH - len(sentence)),(0,0)), 'constant')
     X[i] = result
 
-S = [len(x) for x in all_sentences]
-#
-#
-# # We want to train on a subset of data, and test on remaining data. Your task is to split X, Y and S into training and test set (60%-40%).
-#
-# # In[ ]:
-#
-#
-# """
-# Returns
-# -------
-# X_train, y_train, s_train: arrays
-#     Randomly selected 60% of all data
-# X_test, y_test, s_test: arrays
-#     Rest of the data
-# """
-#
-# ### YOUR CODE HERE ###
-# BATCH_SIZE = 1
-#
-#
-# # LSTM implementation in tensorflow. Inputs are padded sequences of word vectors, sentence lengths, and true labels (0 or 1). The model takes word vectors and passes them through the LSTM. Final state is used as an input of one fully connected layer with output dimension 1. We also get probability that the class is positive and argmax label. Network uses Adam optimizer.
-#
-# # In[ ]:
-#
-#
-# #Omran: I think this section is done, if you face any problem let me know
-# class LSTM:
-#     def __init__(self, cell_dim=64):
-#         """
-#         Attributes
-#         ----------
-#         x: float
-#             Input sentence of shape (BATCH SIZE, MAX SENTENCE LENGTH, EMBEDDING DIM)
-#         y: float
-#             Output label of shape (BATCH SIZE)
-#         s: float
-#             Length of sentences of shape (BATCH SIZE)
-#         last_state: float
-#             The last state of sequences with shape (BATCH SIZE, CELL DIM)
-#         logits: float
-#             The
-#         prob: float
-#             Probabilities after sigmoid
-#         y_hat: int
-#             Predicted class value (0 or 1)
-#         loss: float
-#             Cross entropy loss
-#         optimize:
-#             Operation that updates the weights based on the loss
-#         accuracy: float
-#             Accuracy of prediction y_hat given y
-#         """
-#
-#
-#         """
-#         Define input placeholders x, y and s as class attributes
-#         """
-#         ### YOUR CODE HERE ###
-#         #Omran: the first dim is none so batch size can  take any value.
-#         self.x = tf.placeholder(tf.float64, [None, MAX_SENTENCE_LENGTH,EMBEDDING_DIM], name='x')
-#         self.y = tf.placeholder(tf.float64, [None], name='y')
-#         self.s = tf.placeholder(tf.float64, [None], name='s')
-#
-#         """
-#         Use dynamic_rnn to define an LSTM layer
-#         Define last_state as class attribute to be the last output h of LSTM
-#         (Note that we have zero padding)
-#         """
-#         ### YOUR CODE HERE ###
-#
-#         self.lstm_cell = tf.nn.rnn_cell.LSTMCell(cell_dim)
-#         init_state = cells.zero_state(BATCH_SIZE, tf.float32)
-#
-#         #I am not quite sure if we need outputs, which all the states outputs.
-#         outputs, self.last_state = tf.nn.dynamic_rnn(self.lstm_cell,
-#             rnn_inputs, initial_state=init_state, sequence_length=self.s)
-#         """
-#         Define logits, prob and y_hat as class attributes.
-#         We get logits by applying a single dense layer on the last state.
-#         """
-#         ### YOUR CODE HERE ###
-#         self.logits = tf.layers.dense(
-#             inputs=l,
-#             units=2,
-#             activation=None,
-#             name="output_hidden_layer")
-#
-#
-#         self.loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=self.y, logits=self.logits))
-#         self.optimize = tf.train.AdamOptimizer().minimize(self.loss)
-#
-#         self.y_hat = tf.argmax(out, axis=1)
-#         correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
-#         self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-#
-#
-# # In this part we finally train our RNN model and evaluate on the test set.
-#
-# # In[ ]:
-#
-#
-# tf.reset_default_graph()
-# tf.set_random_seed(123)
-# np.random.seed(123)
-#
-# model = LSTM()
-#
-# with tf.Session() as sess:
-#     sess.run(tf.global_variables_initializer())
-#
-#     for iter in range(300):
-#         i = np.random.randint(0, X_train.shape[0], 64)
-#         feed = { model.x: X_train[i], model.y: y_train[i], model.s: s_train[i] }
-#         _ = sess.run(model.optimize, feed)
-#
-#         if (iter + 1) % 100 == 0:
-#             train_loss, train_accuracy = sess.run([model.loss, model.accuracy], feed)
-#             print('Iter:', iter + 1, 'Train loss:', train_loss, 'Train accuracy:', train_accuracy)
-#
-#     test_loss, test_pred = sess.run([model.loss, model.y_hat], { model.x: X_test, model.y: y_test, model.s: s_test })
-#     print('Test loss:', test_loss, 'Test accuracy:', np.mean(test_pred == y_test))
+S = np.array([len(x) for x in all_sentences])
+
+
+# We want to train on a subset of data, and test on remaining data. Your task is to split X, Y and S into training and test set (60%-40%).
+
+# In[22]:
+
+
+"""
+Returns
+-------
+X_train, y_train, s_train: arrays
+    Randomly selected 60% of all data
+X_test, y_test, s_test: arrays
+    Rest of the data
+"""
+
+### YOUR CODE HERE ###
+# randomize data
+permutation = np.random.permutation(SENTENCES_SIZE)
+X_shuffled = X[permutation]
+y_shuffled = Y[permutation]
+s_shuffled = S[permutation]
+
+index = int(0.6 * SENTENCES_SIZE)
+X_train = X_shuffled[0:index, :, :]
+y_train = y_shuffled[0:index]
+s_train = s_shuffled[0:index]
+
+X_test = X_shuffled[index:, :, :]
+y_test = y_shuffled[index:]
+s_test = s_shuffled[index:]
+BATCH_SIZE = 1
+
+
+# In[23]:
+
+
+y_train[[1,3,4,5]].shape
+y_train[[1,3,4,5]]
+
+
+# LSTM implementation in tensorflow. Inputs are padded sequences of word vectors, sentence lengths, and true labels (0 or 1). The model takes word vectors and passes them through the LSTM. Final state is used as an input of one fully connected layer with output dimension 1. We also get probability that the class is positive and argmax label. Network uses Adam optimizer.
+
+# In[24]:
+
+
+#Omran: I think this section is done, if you face any problem let me know
+class LSTM:
+    def __init__(self, MAX_SENTENCE_LENGTH,EMBEDDING_DIM, cell_dim=64):
+        """
+        Attributes
+        ----------
+        x: float
+            Input sentence of shape (BATCH SIZE, MAX SENTENCE LENGTH, EMBEDDING DIM)
+        y: float
+            Output label of shape (BATCH SIZE)
+        s: float
+            Length of sentences of shape (BATCH SIZE)
+        last_state: float
+            The last state of sequences with shape (BATCH SIZE, CELL DIM)
+        logits: float
+            The 
+        prob: float
+            Probabilities after sigmoid
+        y_hat: int
+            Predicted class value (0 or 1)
+        loss: float
+            Cross entropy loss
+        optimize:
+            Operation that updates the weights based on the loss
+        accuracy: float
+            Accuracy of prediction y_hat given y
+        """
+        
+        
+        """
+        Define input placeholders x, y and s as class attributes
+        """
+        ### YOUR CODE HERE ### 
+        #Omran: the first dim is none so batch size can  take any value.
+        self.x = tf.placeholder(tf.float32, [None, MAX_SENTENCE_LENGTH,EMBEDDING_DIM], name='x')
+        self.y = tf.placeholder(tf.float32, [None], name='y')
+        self.s = tf.placeholder(tf.float32, [None], name='s')
+
+        """ 
+        Use dynamic_rnn to define an LSTM layer
+        Define last_state as class attribute to be the last output h of LSTM
+        (Note that we have zero padding)
+        """
+        ### YOUR CODE HERE ### 
+        
+        self.lstm_cell = tf.nn.rnn_cell.LSTMCell(cell_dim)
+        init_state = self.lstm_cell.zero_state(64, tf.float32)#64 batch size
+        
+        #I am not quite sure if we need outputs, which all the states outputs.
+        outputs, self.last_state = tf.nn.dynamic_rnn(self.lstm_cell, 
+            self.x, initial_state=init_state, sequence_length=self.s)
+        """
+        Define logits, prob and y_hat as class attributes. 
+        We get logits by applying a single dense layer on the last state.
+        """
+        ### YOUR CODE HERE ### 
+        #self.logits = tf.nn.layers.dense(
+            #inputs=self.last_state,
+            #units=1,
+            #activation=None)
+        weights = tf.Variable(tf.random_normal([cell_dim, 1]))
+
+        output = tf.matmul(self.last_state[-1], weights) 
+        self.logits =  tf.squeeze(output)
+        ySqueezed = tf.squeeze(self.y)
+        r = tf.nn.sigmoid_cross_entropy_with_logits(labels=ySqueezed, logits=self.logits)
+        self.loss = tf.reduce_mean(r)
+        self.optimize = tf.train.AdamOptimizer().minimize(self.loss)
+        
+        self.y_hat = tf.round(r)
+        
+        #correct_pred = tf.equal(tf.argmax(self.y_hat, 1), tf.argmax(self.y))
+        correct_pred = tf.losses.absolute_difference(self.y, self.y_hat)
+        self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
+
+# In this part we finally train our RNN model and evaluate on the test set.
+
+# In[25]:
+
+
+tf.reset_default_graph()
+tf.set_random_seed(123)
+np.random.seed(123)
+
+model = LSTM(MAX_SENTENCE_LENGTH,EMBEDDING_DIM)
+
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+
+    for iter in range(300):
+        i = np.random.randint(0, X_train.shape[0], 64)
+        feed = { model.x: X_train[i], model.y: y_train[i], model.s: s_train[i] }
+        _ = sess.run(model.optimize, feed)
+        
+        if (iter + 1) % 100 == 0:
+            train_loss, train_accuracy = sess.run([model.loss, model.accuracy], feed)
+            print('Iter:', iter + 1, 'Train loss:', train_loss, 'Train accuracy:', train_accuracy)
+
+    test_loss, test_pred = sess.run([model.loss, model.y_hat], { model.x: X_test, model.y: y_test, model.s: s_test })
+    print('Test loss:', test_loss, 'Test accuracy:', np.mean(test_pred == y_test))
 
 
 # In[ ]:
