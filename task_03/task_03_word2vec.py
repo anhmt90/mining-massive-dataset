@@ -238,7 +238,8 @@ class Embedding():
         M = x.shape[0]
         one_hot = np.zeros((N, M))
         for i in range(M):
-            one_hot[x[i], i] = 1
+            if(ind_to_word.get(i) != None):
+                one_hot[x[i], i] = 1
         
 #         for xi,intWord in enumerate(x):
 #             one_hot[xi,intWord] = 1
@@ -573,45 +574,51 @@ for triplet in triplets:
     print('%s is to %s as %s is to [%s]' % (a, b, c, '|'.join(candidates)))
 
 
-# # # RNN
-# #
-# # Our end goal is to use the pretrained word vectors on some downstream task, e.g. sentiment analysis. We first generate a dataset where we just concatenate 1 and 5-star reviews into `all_sentences`. We also create a list `Y` with labels 1 for positive reviews and 0 for negative
+# # RNN
 #
-# # In[ ]:
-#
-#
-# all_sentences = reviews_1star + reviews_5star
-# Y = np.array([0] * len(reviews_1star) + [1] * len(reviews_5star))
-#
-# SENTENCES_SIZE = len(all_sentences)
-# MAX_SENTENCE_LENGTH = max([len(x) for x in all_sentences])
-#
-#
-# # Your task is to create an array $\mathbf{X}$ where (i,j,k) element denotes $k$th value of an embedding for $j$th word in $i$th sentence in the dataset. In addition, we need a list that keeps track of how many words are in each sentence.
-#
-# # In[ ]:
-#
-#
-# """
-# Returns
-# -------
-# X: array
-#     Array of dimensions (SENTENCES_SIZE, MAX_SENTENCE_LENGTH, EMBEDDING_DIM) where
-#     the first dimension denotes the index of the sentence in the dataset and second is
-#     the word index in the sentence. Sentences that are shorter than MAX_SENTENCE_LENGTH
-#     are padded with zero vectors. Words that are not in the vocabulary are also
-#     represented with zero vectors of EMBEDDING_DIM size.
-# S: array
-#     Array of SENTENCES_SIZE dimension containing the sentence lenghts
-# """
-#
-# ### YOUR CODE HERE ###
-# X = np.zeros((SENTENCES_SIZE, MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
-# #### Omran: I did not complete this
-# for xi, sentence in enumerate(reviews_1star + reviews_5star):
-#
-#
-# S = [len(x) for x in all_sentences]
+# Our end goal is to use the pretrained word vectors on some downstream task, e.g. sentiment analysis. We first generate a dataset where we just concatenate 1 and 5-star reviews into `all_sentences`. We also create a list `Y` with labels 1 for positive reviews and 0 for negative
+
+# In[ ]:
+
+
+all_sentences = reviews_1star + reviews_5star
+Y = np.array([0] * len(reviews_1star) + [1] * len(reviews_5star))
+
+SENTENCES_SIZE = len(all_sentences)
+MAX_SENTENCE_LENGTH = max([len(x) for x in all_sentences])
+
+
+# Your task is to create an array $\mathbf{X}$ where (i,j,k) element denotes $k$th value of an embedding for $j$th word in $i$th sentence in the dataset. In addition, we need a list that keeps track of how many words are in each sentence.
+
+# In[ ]:
+
+
+"""
+Returns
+-------
+X: array
+    Array of dimensions (SENTENCES_SIZE, MAX_SENTENCE_LENGTH, EMBEDDING_DIM) where
+    the first dimension denotes the index of the sentence in the dataset and second is
+    the word index in the sentence. Sentences that are shorter than MAX_SENTENCE_LENGTH
+    are padded with zero vectors. Words that are not in the vocabulary are also
+    represented with zero vectors of EMBEDDING_DIM size.
+S: array
+    Array of SENTENCES_SIZE dimension containing the sentence lenghts
+"""
+
+### YOUR CODE HERE ###
+X = np.zeros((SENTENCES_SIZE, MAX_SENTENCE_LENGTH, EMBEDDING_DIM))
+for i, sentence in enumerate(all_sentences):
+    indices = []
+    for word in sentence:
+        indices.append(word_to_ind[word])
+
+    one_hot_mat = model.one_hot(np.array(indices), model.N)
+    result = (model.U @ one_hot_mat).T
+    result = np.pad(result, ((0,MAX_SENTENCE_LENGTH - len(sentence)),(0,0)), 'constant')
+    X[i] = result
+
+S = [len(x) for x in all_sentences]
 #
 #
 # # We want to train on a subset of data, and test on remaining data. Your task is to split X, Y and S into training and test set (60%-40%).
