@@ -108,7 +108,7 @@ def page_rank(A, beta, teleport_idx=None, eps=1e-12):
     beta        : float, 
                   0 < beta < 1, (1-beta) is the probabilty of teleporting to the nodes in the teleport set
     teleport_idx: np.array, shape [S]
-                  The indicies of the nodes in the teleport set. If it equals to None
+                  The indices of the nodes in the teleport set. If it equals to None
                   it means runs standard PageRank, i.e. all nodes are in the teleport set.
     
     Returns
@@ -118,7 +118,35 @@ def page_rank(A, beta, teleport_idx=None, eps=1e-12):
     """
     
     #### YOUR CODE ####
-    
+    # number of restaurants
+    n = A.shape[0]
+
+    # initialize r
+    r = np.random.uniform(size=n)
+    r = r / np.sum(r)
+
+    # computes penalty for standard PageRank OR
+    # computes penalty only for restaurants in teleport set and the rest of restaurants gets 0 teleport prob.
+    penalty = np.zeros(n)
+    if teleport_idx is None:
+        penalty = (1 - beta) * np.full(n, 1 / n)
+    else:
+        penalty[teleport_idx] = (1 - beta) * 1 / len(teleport_idx)
+
+    # makes A a column stochastic matrix (normalizing)
+    A_array = A.toarray()
+    A_normalized = A_array / A_array.sum(axis=0, keepdims=True)
+    A = sp.csr_matrix(A_normalized)
+
+    # initialize r_prev to store r in the previous iteration
+    r_prev = np.zeros(n)
+
+    # computes importance rank iteratively until reaching stationary distribution
+    while np.linalg.norm(
+            r - r_prev) >= eps:  # the Euclidean distance between r_updated and r must be less than eps for the loop to stop
+        r_prev = r
+        r = beta * A.dot(r) + penalty
+
     return r
 
 
